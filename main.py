@@ -1,20 +1,15 @@
 import logging
-
-import aiogram
 import datetime
-# Импорт переменных
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
-from aiogram.types import ReplyKeyboardRemove, \
-    ReplyKeyboardMarkup, KeyboardButton, \
-    InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+# Импорт переменных
 from owenClient import OwenApi
 from settings import API_TOKEN
 from keyboard import button_row
+from settings import logger
 
-# Настройка лога
-logger = logging.getLogger(__name__)
 
 logger.info('Программа запущена, начинаем инициализацию')
 bot = Bot(token=API_TOKEN)
@@ -28,9 +23,9 @@ devices_list = api.getListDevices()
 
 @dp.message_handler(commands=['start'])
 async def send_welcome(message: types.Message):
-    mess = 'Добро пожаловать. Я бот для работы с owencloud api \n'
+    mess = 'Добро пожаловать.\n\nЯ бот для работы с owencloud api \n'
     mess += '/help Для справки'
-    await message.answer(mess, )
+    await message.answer(mess )
 
 
 @dp.message_handler(commands=['help'])
@@ -47,21 +42,18 @@ async def send_help(message: types.Message):
     await message.answer(mess, reply_markup=button_row)
 
 
+def one_button(id, type, name):
+    return {
+        "id": id,
+        "type": type,
+        "name": name
+    }
+
 def fill_device(id):
     list = []
     for i in devices_list:
         if id in i['categories']:
-            one_button = {
-                "id": i["id"],
-                "type": 'd',
-                "name": i['name']
-            }
-
-            # button = InlineKeyboardButton(
-            #     text=f"Устройство {i['name']}",
-            #     callback_data=f'devices_{i["id"]}'
-            # )
-            list.append(one_button)
+            list.append(one_button(i["id"], 'd', i['name']))
     return list
 
 
@@ -105,20 +97,9 @@ def show_categories(id=None):
 
     for i in categories_list:
         if id is None or id == i["parent_id"]:
-            one_button = {
-                "id": i["id"],
-                "type": 'c',
-                "name": i['name']
-            }
-            button_list.append(one_button)
-            # button = InlineKeyboardButton(
-            #     text=f"{i['name']}{50*' '}.",
-            #     callback_data=f'categories_{i["id"]}'
-            # )
-            # builder_category.insert(button)
+            button_list.append(one_button(i["id"], 'c', i['name']))
             for j in fill_device(i["id"]):
                 button_list.append(j)
-                # builder_category.insert(j)
 
     return mess, format_buttons(button_list)
 
@@ -128,12 +109,7 @@ def show_devices():
     mess = 'Выберите устройство'
 
     for i in devices_list:
-        one_button = {
-            "id": i["id"],
-            "type": 'd',
-            "name": i['name']
-        }
-        button_list.append(one_button)
+        button_list.append(one_button(i["id"], 'd', i['name']))
 
     return mess, format_buttons(button_list, 1)
 
@@ -175,11 +151,12 @@ def show_device_param(id):
         dt = datetime.datetime.fromtimestamp(timestamp)
         formatted_dt = dt.strftime("%H:%M:%S %d.%m.%Y")
     except:
-        formatted_dt=''
+        formatted_dt = ''
     mess = f'для устройства {name} в {formatted_dt} получены следующие значения: \n\n'
     for param in device_param:
         mess += f"{params_keys[param['id']]['name']}:  {param['values'][0]['f']} \n"
     return mess
+
 
 def devices(text):
     text = text.split('_')
@@ -209,32 +186,21 @@ async def cmd_common(message: types.Message):
 
 @dp.callback_query_handler(lambda c: c.data and c.data.startswith('categories_'))
 async def process_callback_categories(callback_query: types.CallbackQuery):
-    text = callback_query.data.split('_')
-    if len(text) > 1:
-        code = text[1]
     mess, builder = categories(callback_query.data)
     await callback_query.message.answer(mess, reply_markup=builder)
 
 
 @dp.callback_query_handler(lambda c: c.data and c.data.startswith('devices_'))
 async def process_callback_categories(callback_query: types.CallbackQuery):
-    print('Попали')
-    text = callback_query.data.split('_')
-    if len(text) > 1:
-        code = text[1]
     mess, builder = devices(callback_query.data)
     await callback_query.message.answer(mess, reply_markup=builder, parse_mode='HTML')
 
 
 @dp.callback_query_handler(lambda c: c.data == "process_callback_help")
 async def process_callback_help(callback_query: types.CallbackQuery):
-    # code = callback_query.data.split('_')[1]
-    # mess, builder = categories(message)
-    # await bot.send_message(callback_query.message.from_id, text='Справка', reply_markup=button_row)
-    await callback_query.message.answer("Справка", reply_markup=button_row)
-
-    logger.info('Запущен главный цикл')
+    await callback_query.message.answer("Справка по работе с ботом", reply_markup=button_row)
 
 
+logger.info('Запущен главный цикл')
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=False)

@@ -1,12 +1,4 @@
-from aiogram.types import ReplyKeyboardRemove, \
-    ReplyKeyboardMarkup, KeyboardButton, \
-    InlineKeyboardMarkup, InlineKeyboardButton
-
-# =========================================================================
-
-# button_help = KeyboardButton('/help')
-# button_categories = KeyboardButton('/categories')
-# button_devices = KeyboardButton('/devices')
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 button_row = InlineKeyboardMarkup(row_width=1)
 button = InlineKeyboardButton(
@@ -25,9 +17,3 @@ button = InlineKeyboardButton(
 )
 button_row.insert(button)
 
-# Затравка на будущее
-# inline_btn_1 = InlineKeyboardButton('Первая кнопка!', callback_data='button1')
-# inline_kb1 = InlineKeyboardMarkup().add(inline_btn_1)
-
-
-# =========================================================================
