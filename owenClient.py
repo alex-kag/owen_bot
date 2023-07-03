@@ -5,9 +5,9 @@ from settings import PASSWORD
 
 
 class OwenApi:
-    def __init__(self):
+    def __init__(self, url):
         self.token = None
-        self.url = "https://api.owencloud.ru/v1/"
+        self.url = url
         self.getToken()
 
     def getToken(self):

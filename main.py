@@ -9,14 +9,14 @@ from owenClient import OwenApi
 from settings import API_TOKEN
 from keyboard import button_row
 from settings import logger
-
+from settings import URL_TO_GET_DATA
 
 logger.info('Программа запущена, начинаем инициализацию')
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
 dp.middleware.setup(LoggingMiddleware())
 
-api = OwenApi()
+api = OwenApi(URL_TO_GET_DATA)
 categories_list = api.getCategories()
 devices_list = api.getListDevices()
 
@@ -36,10 +36,10 @@ async def send_help(message: types.Message):
     :return:
     """
     logger.debug('Вызов общей справки', message.from_user.id)
-    mess = ''
+    answer_messege = ''
 
-    mess += "Справка по работе с ботом\n"
-    await message.answer(mess, reply_markup=button_row)
+    answer_messege += "Справка по работе с ботом\n"
+    await message.answer(answer_messege, reply_markup=button_row)
 
 
 def one_button(id, type, name):
@@ -51,9 +51,9 @@ def one_button(id, type, name):
 
 def fill_device(id):
     list = []
-    for i in devices_list:
-        if id in i['categories']:
-            list.append(one_button(i["id"], 'd', i['name']))
+    for device in devices_list:
+        if id in device['categories']:
+            list.append(one_button(device["id"], 'd', device['name']))
     return list
 
 
@@ -86,32 +86,32 @@ def format_buttons(button_list, columns=2):
 
 def show_categories(id=None):
     button_list = []
-    mess = 'Выберите категорию'
+    answer_messege = 'Выберите категорию'
 
     if id is not None:
-        for i in categories_list:
-            if i["id"] == id:
-                mess = f"Категория: {i['name']}"
-                for j in fill_device(i["id"]):
-                    button_list.append(j)
+        for category in categories_list:
+            if category["id"] == id:
+                answer_messege = f"Категория: {category['name']}"
+                for device in fill_device(category["id"]):
+                    button_list.append(device)
 
-    for i in categories_list:
-        if id is None or id == i["parent_id"]:
-            button_list.append(one_button(i["id"], 'c', i['name']))
-            for j in fill_device(i["id"]):
-                button_list.append(j)
+    for category in categories_list:
+        if id is None or id == category["parent_id"]:
+            button_list.append(one_button(category["id"], 'c', category['name']))
+            for device in fill_device(category["id"]):
+                button_list.append(device)
 
-    return mess, format_buttons(button_list)
+    return answer_messege, format_buttons(button_list)
 
 
 def show_devices():
     button_list = []
-    mess = 'Выберите устройство'
+    answer_messege = 'Выберите устройство'
 
-    for i in devices_list:
-        button_list.append(one_button(i["id"], 'd', i['name']))
+    for device in devices_list:
+        button_list.append(one_button(device["id"], 'd', device['name']))
 
-    return mess, format_buttons(button_list, 1)
+    return answer_messege, format_buttons(button_list, 1)
 
 
 def parse_message(text):
@@ -124,11 +124,11 @@ def parse_message(text):
     :param text:
     :return:
     """
-    mess = text.split()
-    if len(mess) > 0:
-        if mess[0].find("/categories") >= 0:
+    splited_text = text.split()
+    if len(splited_text) > 0:
+        if splited_text[0].find("/categories") >= 0:
             return 1
-        if mess[0].find("/devices") >= 0:
+        if splited_text[0].find("/devices") >= 0:
             return 2
     return 0
 
@@ -139,8 +139,8 @@ def categories(text):
     if len(text) > 1 and text[1] != '':
         id = int(text[1])
 
-    mess, builder = show_categories(id)
-    return mess, builder
+    answer_messege, builder = show_categories(id)
+    return answer_messege, builder
     # pass
 
 
@@ -152,10 +152,10 @@ def show_device_param(id):
         formatted_dt = dt.strftime("%H:%M:%S %d.%m.%Y")
     except:
         formatted_dt = ''
-    mess = f'для устройства {name} в {formatted_dt} получены следующие значения: \n\n'
+    answer_messege = f'для устройства {name} в {formatted_dt} получены следующие значения: \n\n'
     for param in device_param:
-        mess += f"{params_keys[param['id']]['name']}:  {param['values'][0]['f']} \n"
-    return mess
+        answer_messege += f"{params_keys[param['id']]['name']}:  {param['values'][0]['f']} \n"
+    return answer_messege
 
 
 def devices(text):
@@ -163,37 +163,37 @@ def devices(text):
     id = None
     if len(text) > 1 and text[1] != '':
         id = int(text[1])
-        mess = show_device_param(id)
+        answer_messege = show_device_param(id)
         builder = None
     else:
-        mess, builder = show_devices()
-    return mess, builder
+        answer_messege, builder = show_devices()
+    return answer_messege, builder
 
 
 @dp.message_handler()
 async def cmd_common(message: types.Message):
     rez = parse_message(message.text)
-    mess = ''
+    answer_messege = ''
     if rez == 0:
         send_help(message)
     if rez == 1:
-        mess, builder = categories(message.text)
-        await message.answer(mess, reply_markup=builder)
+        answer_messege, builder = categories(message.text)
+        await message.answer(answer_messege, reply_markup=builder)
     if rez == 2:
-        mess, builder = devices(message.text)
-        await message.answer(mess, reply_markup=builder)
+        answer_messege, builder = devices(message.text)
+        await message.answer(answer_messege, reply_markup=builder)
 
 
 @dp.callback_query_handler(lambda c: c.data and c.data.startswith('categories_'))
 async def process_callback_categories(callback_query: types.CallbackQuery):
-    mess, builder = categories(callback_query.data)
-    await callback_query.message.answer(mess, reply_markup=builder)
+    answer_messege, builder = categories(callback_query.data)
+    await callback_query.message.answer(answer_messege, reply_markup=builder)
 
 
 @dp.callback_query_handler(lambda c: c.data and c.data.startswith('devices_'))
 async def process_callback_categories(callback_query: types.CallbackQuery):
-    mess, builder = devices(callback_query.data)
-    await callback_query.message.answer(mess, reply_markup=builder, parse_mode='HTML')
+    answer_messege, builder = devices(callback_query.data)
+    await callback_query.message.answer(answer_messege, reply_markup=builder, parse_mode='HTML')
 
 
 @dp.callback_query_handler(lambda c: c.data == "process_callback_help")
